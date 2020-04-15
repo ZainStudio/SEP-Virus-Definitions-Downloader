@@ -2,165 +2,130 @@ import hashlib
 import os
 import requests
 import time
-from bs4 import BeautifulSoup
+import json
+import re
+from jsonpath import jsonpath
 from tqdm import tqdm
 from urllib.request import urlopen
 
-# SEP 定義ファイルのダウンロードリンク
+# 提示用
+print("================ SEP パターンファイル取得ツール ================")
+print("SEP パターンファイルのダウンロードリンクを分析しています…")
 
-print("SEP 定義ファイルのダウンロードリンクを分析しています…")
-
-# 以降はSEP12
+# ここからはSEP12
 link_sep12savce = requests.get(
-    'https://www.symantec.com/ja/jp/security_response/definitions/download/detail.jsp?gid=savce'
+    'https://www.broadcom.com/api/getjsonbyurl?vanityurl=support/security-center/definitions/download/detail&locale=avg_en&updateddate=&gid=sep'
 )
 link_sep12ips = requests.get(
-    'https://www.symantec.com/ja/jp/security_response/definitions/download/detail.jsp?gid=ips'
+    'https://www.broadcom.com/api/getjsonbyurl?vanityurl=support/security-center/definitions/download/detail&locale=avg_en&updateddate=&gid=ips'
 )
-# 以降はSEP14
+# ここからはSEP14
 link_sep14 = requests.get(
-    'https://www.symantec.com/ja/jp/security_response/definitions/download/detail.jsp?gid=sep14'
+    'https://www.broadcom.com/api/getjsonbyurl?vanityurl=support/security-center/definitions/download/detail&locale=avg_en&updateddate=&gid=sep14'
 )
 link_ips14 = requests.get(
-    'https://www.symantec.com/ja/jp/security_response/definitions/download/detail.jsp?gid=ips14'
+    'https://www.broadcom.com/api/getjsonbyurl?vanityurl=support/security-center/definitions/download/detail&locale=avg_en&updateddate=&gid=ips14'
 )
 link_sonar = requests.get(
-    'https://www.symantec.com/ja/jp/security_response/definitions/download/detail.jsp?gid=sonar'
+    'https://www.broadcom.com/api/getjsonbyurl?vanityurl=support/security-center/definitions/download/detail&locale=avg_en&updateddate=&gid=sonar'
 )
 
-# 定義ファイルの HTML コードを取集
-# 以降はSEP12
-# 取集した savce(SEP12) 定義ファイルに関する HTML コードの状態を確認
-if link_sep12savce.status_code == requests.codes['ok']:
-    # BeautifulSoup を使って HTML コードを分析
-    soup = BeautifulSoup(link_sep12savce.text, 'html.parser')
-    # CSS Selector で各ダウンロードリンクを取集
-    v5i32 = soup.select(
-        'div.imgMrgnTopMD:nth-child(3) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    v5i64 = soup.select(
-        'div.imgMrgnTopMD:nth-child(5) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    jdb = soup.select(
-        'div.imgMrgnTopMD:nth-child(7) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    # CSS Selector で各ファイルの MD5 情報取集
-    v5i32_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(3) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
-    v5i64_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(5) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
-    jdb_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(7) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
+# 取得した元データ(str) を dict に転換する
+json_sep12savce = json.loads(link_sep12savce.text)
+json_sep12ips = json.loads(link_sep12ips.text)
+json_sep14 = json.loads(link_sep14.text)
+json_ips14 = json.loads(link_ips14.text)
+json_sonar = json.loads(link_sonar.text)
 
-# 取集した ips(SEP12) 定義ファイルに関する HTML コードの状態を確認
-if link_sep12ips.status_code == requests.codes['ok']:
-    # BeautifulSoup を使って HTML コードを分析
-    soup = BeautifulSoup(link_sep12ips.text, 'html.parser')
-    # CSS Selector で各ダウンロードリンクを取集
-    ips_exe = soup.select(
-        'div.imgMrgnTopMD:nth-child(3) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    ips_jdb = soup.select(
-        'div.imgMrgnTopMD:nth-child(5) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    # CSS Selector で各ファイルの MD5 情報取集
-    ips_exe_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(3) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
-    ips_jdb_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(5) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
+# ダウンロードリンクが記載される JSON の分析
+# （ここからはSEP12）
+# savce(SEP12) 定義ファイルに関する JSON コードの抽出
+v5i64 = jsonpath(json_sep12savce, "$[groups][0][packages][1][file][_url_]")
+v5i64_MD5 = jsonpath(json_sep12savce, "$[groups][0][packages][1][file][md5]")
+v5i64_filename = jsonpath(json_sep12savce,
+                          "$[groups][0][packages][1][file][name]")
+jdb = jsonpath(json_sep12savce, "$[groups][0][packages][2][file][_url_]")
+jdb_MD5 = jsonpath(json_sep12savce, "$[groups][0][packages][2][file][md5]")
+jdb_filename_org = jsonpath(json_sep12savce,
+                        "$[groups][0][packages][2][file][name]")
 
-# 取集した sonar 定義ファイルに関する HTML コードの状態を確認
-if link_sonar.status_code == requests.codes['ok']:
-    # BeautifulSoup を使って HTML コードを分析
-    soup = BeautifulSoup(link_sonar.text, 'html.parser')
-    # CSS Selector で各ダウンロードリンクを取集
-    sonar_exe = soup.select(
-        'div.imgMrgnTopMD:nth-child(3) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    sonar_jdb = soup.select(
-        'div.imgMrgnTopMD:nth-child(5) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    # CSS Selector で各ファイルの MD5 情報取集
-    sonar_exe_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(3) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
-    sonar_jdb_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(5) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
+# ips(SEP12) ファイルに関する JSON コードの抽出
+ips_exe = jsonpath(json_sep12ips, "$[groups][0][packages][0][file][_url_]")
+ips_exe_MD5 = jsonpath(json_sep12ips, "$[groups][0][packages][0][file][md5]")
+ips_exe_filename_org = jsonpath(json_sep12ips,
+                            "$[groups][0][packages][0][file][name]")
+ips_jdb = jsonpath(json_sep12ips, "$[groups][0][packages][1][file][_url_]")
+ips_jdb_MD5 = jsonpath(json_sep12ips, "$[groups][0][packages][1][file][md5]")
+ips_jdb_filename_org = jsonpath(json_sep12ips,
+                            "$[groups][0][packages][1][file][name]")
 
-# 以降はSEP14
-# 取集した savce(SEP14) 定義ファイルに関する HTML コードの状態を確認
-if link_sep14.status_code == requests.codes['ok']:
-    # BeautifulSoup を使って HTML コードを分析
-    soup = BeautifulSoup(link_sep14.text, 'html.parser')
-    # CSS Selector で各ダウンロードリンクを取集 ※SEP 14.0 ダークネットワーククライアントのみ
-    core15sds_v5i32 = soup.select(
-        'div.imgMrgnTopMD:nth-child(7) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    core15sds_v5i64 = soup.select(
-        'div.imgMrgnTopMD:nth-child(9) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    core15sds_jdb = soup.select(
-        'div.imgMrgnTopMD:nth-child(13) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    # CSS Selector で各ファイルの MD5 情報取集
-    core15sds_v5i32_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(7) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
-    core15sds_v5i64_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(9) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
-    core15sds_jdb_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(13) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
+# SEP14 ファイルに関する JSON コードの抽出
+core15sds_v5i64 = jsonpath(json_sep14,
+                           "$[groups][0][packages][5][file][_url_]")
+core15sds_v5i64_MD5 = jsonpath(json_sep14,
+                               "$[groups][0][packages][5][file][md5]")
+core15sds_v5i64_filename = jsonpath(json_sep14,
+                                    "$[groups][0][packages][5][file][name]")
+core15sds_jdb = jsonpath(json_sep14, "$[groups][0][packages][8][file][_url_]")
+core15sds_jdb_MD5 = jsonpath(json_sep14,
+                             "$[groups][0][packages][8][file][md5]")
+core15sds_jdb_filename_org = jsonpath(json_sep14,
+                                  "$[groups][0][packages][8][file][name]")
 
-# 取集した ips(SEP14 RU1 以降) 定義ファイルに関する HTML コードの状態を確認
-if link_ips14.status_code == requests.codes['ok']:
-    # BeautifulSoup を使って HTML コードを分析
-    soup = BeautifulSoup(link_ips14.text, 'html.parser')
-    # CSS Selector で各ダウンロードリンクを取集
-    ips14_exe = soup.select(
-        'div.imgMrgnTopMD:nth-child(7) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    ips14_jdb = soup.select(
-        'div.imgMrgnTopMD:nth-child(9) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(1) > strong:nth-child(1) > a:nth-child(1)'
-    )
-    # CSS Selector で各ファイルの MD5 情報取集
-    ips14_exe_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(7) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
-    ips14_jdb_MD5 = soup.select(
-        'div.imgMrgnTopMD:nth-child(9) > div:nth-child(1) > table:nth-child(1) > tbody:nth-child(2) > tr:nth-child(1) > td:nth-child(5)'
-    )
+# ips(SEP14) ファイルに関する JSON コードの抽出
+ips14_exe = jsonpath(json_ips14, "$[groups][0][packages][4][file][_url_]")
+ips14_exe_MD5 = jsonpath(json_ips14, "$[groups][0][packages][4][file][md5]")
+ips14_exe_filename_org = jsonpath(json_ips14,
+                              "$[groups][0][packages][4][file][name]")
+
+ips14_jdb = jsonpath(json_ips14, "$[groups][0][packages][5][file][_url_]")
+ips14_jdb_MD5 = jsonpath(json_ips14, "$[groups][0][packages][5][file][md5]")
+ips14_jdb_filename_org = jsonpath(json_ips14,
+                              "$[groups][0][packages][5][file][name]")
+
+# sonar ファイルに関する JSON コードの抽出
+sonar_exe = jsonpath(json_sonar, "$[groups][0][packages][0][file][_url_]")
+sonar_exe_MD5 = jsonpath(json_sonar, "$[groups][0][packages][0][file][md5]")
+sonar_exe_filename_org = jsonpath(json_sonar,
+                              "$[groups][0][packages][0][file][name]")
+sonar_jdb = jsonpath(json_sonar, "$[groups][0][packages][1][file][_url_]")
+sonar_jdb_MD5 = jsonpath(json_sonar, "$[groups][0][packages][1][file][md5]")
+sonar_jdb_filename_org = jsonpath(json_sonar,
+                              "$[groups][0][packages][1][file][name]")
+
+# ファイル名整形
+jdb_filename = re.findall('v.*b', str(jdb_filename_org))
+ips_exe_filename = re.findall('2.*e', str(ips_exe_filename_org))
+ips_jdb_filename = re.findall('2.*b', str(ips_jdb_filename_org))
+core15sds_jdb_filename = re.findall('v.*b', str(core15sds_jdb_filename_org))
+ips14_exe_filename = re.findall('2.*e', str(ips14_exe_filename_org))
+ips14_jdb_filename = re.findall('2.*b', str(ips14_jdb_filename_org))
+sonar_exe_filename = re.findall('2.*e', str(sonar_exe_filename_org))
+sonar_jdb_filename = re.findall('2.*b', str(sonar_jdb_filename_org))
 
 # List で取集したリンク・ファイル名・ファイル MD5 情報を格納
 link_list = [
-    v5i32[0].get('href'), v5i64[0].get('href'), jdb[0].get('href'),
-    ips_exe[0].get('href'), ips_jdb[0].get('href'), sonar_exe[0].get('href'),
-    sonar_jdb[0].get('href'), core15sds_v5i32[0].get('href'),
-    core15sds_v5i64[0].get('href'), core15sds_jdb[0].get('href'),
-    ips14_exe[0].get('href'), ips14_jdb[0].get('href')
+    v5i64[0], jdb[0], ips_exe[0], ips_jdb[0], sonar_exe[0], sonar_jdb[0],
+    core15sds_v5i64[0], core15sds_jdb[0], ips14_exe[0], ips14_jdb[0]
 ]
 
 filename_list = [
-    v5i32[0].text, v5i64[0].text, jdb[0].text, ips_exe[0].text,
-    ips_jdb[0].text, sonar_exe[0].text, sonar_jdb[0].text,
-    core15sds_v5i32[0].text, core15sds_v5i64[0].text, core15sds_jdb[0].text,
-    ips14_exe[0].text, ips14_jdb[0].text
+    v5i64_filename[0], jdb_filename[0], ips_exe_filename[0],
+    ips_jdb_filename[0], sonar_exe_filename[0], sonar_jdb_filename[0],
+    core15sds_v5i64_filename[0], core15sds_jdb_filename[0],
+    ips14_exe_filename[0], ips14_jdb_filename[0]
 ]
 
 MD5_list = [
-    v5i32_MD5[0].text, v5i64_MD5[0].text, jdb_MD5[0].text, ips_exe_MD5[0].text,
-    ips_jdb_MD5[0].text, sonar_exe_MD5[0].text, sonar_jdb_MD5[0].text,
-    core15sds_v5i32_MD5[0].text, core15sds_v5i64_MD5[0].text,
-    core15sds_jdb_MD5[0].text, ips14_exe_MD5[0].text, ips14_jdb_MD5[0].text
+    v5i64_MD5[0], jdb_MD5[0], ips_exe_MD5[0], ips_jdb_MD5[0], sonar_exe_MD5[0],
+    sonar_jdb_MD5[0], core15sds_v5i64_MD5[0], core15sds_jdb_MD5[0],
+    ips14_exe_MD5[0], ips14_jdb_MD5[0]
 ]
 
+# 提示 & Debug用
+#print(link_list, filename_list, MD5_list)
+print("======================== 分析完了 ========================")
+print("SEP パターンファイルのダウンロードしています…")
 
 # ダウンロード&プログレスバーモジュールに関するコード
 def downloader(url, path):
