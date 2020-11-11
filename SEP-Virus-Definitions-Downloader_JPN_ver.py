@@ -47,17 +47,17 @@ v5i64_filename = jsonpath(json_sep12savce,
 jdb = jsonpath(json_sep12savce, "$[groups][0][packages][2][file][_url_]")
 jdb_MD5 = jsonpath(json_sep12savce, "$[groups][0][packages][2][file][md5]")
 jdb_filename_org = jsonpath(json_sep12savce,
-                        "$[groups][0][packages][2][file][name]")
+                            "$[groups][0][packages][2][file][name]")
 
 # ips(SEP12) ファイルに関する JSON コードの抽出
 ips_exe = jsonpath(json_sep12ips, "$[groups][0][packages][0][file][_url_]")
 ips_exe_MD5 = jsonpath(json_sep12ips, "$[groups][0][packages][0][file][md5]")
 ips_exe_filename_org = jsonpath(json_sep12ips,
-                            "$[groups][0][packages][0][file][name]")
+                                "$[groups][0][packages][0][file][name]")
 ips_jdb = jsonpath(json_sep12ips, "$[groups][0][packages][1][file][_url_]")
 ips_jdb_MD5 = jsonpath(json_sep12ips, "$[groups][0][packages][1][file][md5]")
 ips_jdb_filename_org = jsonpath(json_sep12ips,
-                            "$[groups][0][packages][1][file][name]")
+                                "$[groups][0][packages][1][file][name]")
 
 # SEP14 ファイルに関する JSON コードの抽出
 core15sds_v5i64 = jsonpath(json_sep14,
@@ -66,32 +66,32 @@ core15sds_v5i64_MD5 = jsonpath(json_sep14,
                                "$[groups][0][packages][5][file][md5]")
 core15sds_v5i64_filename = jsonpath(json_sep14,
                                     "$[groups][0][packages][5][file][name]")
-core15sds_jdb = jsonpath(json_sep14, "$[groups][0][packages][8][file][_url_]")
+core15sds_jdb = jsonpath(json_sep14, "$[groups][0][packages][10][file][_url_]")
 core15sds_jdb_MD5 = jsonpath(json_sep14,
-                             "$[groups][0][packages][8][file][md5]")
-core15sds_jdb_filename_org = jsonpath(json_sep14,
-                                  "$[groups][0][packages][8][file][name]")
+                             "$[groups][0][packages][10][file][md5]")
+core15sds_jdb_filename_org = jsonpath(
+    json_sep14, "$[groups][0][packages][10][file][name]")
 
 # ips(SEP14) ファイルに関する JSON コードの抽出
 ips14_exe = jsonpath(json_ips14, "$[groups][0][packages][4][file][_url_]")
 ips14_exe_MD5 = jsonpath(json_ips14, "$[groups][0][packages][4][file][md5]")
 ips14_exe_filename_org = jsonpath(json_ips14,
-                              "$[groups][0][packages][4][file][name]")
+                                  "$[groups][0][packages][4][file][name]")
 
 ips14_jdb = jsonpath(json_ips14, "$[groups][0][packages][5][file][_url_]")
 ips14_jdb_MD5 = jsonpath(json_ips14, "$[groups][0][packages][5][file][md5]")
 ips14_jdb_filename_org = jsonpath(json_ips14,
-                              "$[groups][0][packages][5][file][name]")
+                                  "$[groups][0][packages][5][file][name]")
 
 # sonar ファイルに関する JSON コードの抽出
 sonar_exe = jsonpath(json_sonar, "$[groups][0][packages][0][file][_url_]")
 sonar_exe_MD5 = jsonpath(json_sonar, "$[groups][0][packages][0][file][md5]")
 sonar_exe_filename_org = jsonpath(json_sonar,
-                              "$[groups][0][packages][0][file][name]")
+                                  "$[groups][0][packages][0][file][name]")
 sonar_jdb = jsonpath(json_sonar, "$[groups][0][packages][1][file][_url_]")
 sonar_jdb_MD5 = jsonpath(json_sonar, "$[groups][0][packages][1][file][md5]")
 sonar_jdb_filename_org = jsonpath(json_sonar,
-                              "$[groups][0][packages][1][file][name]")
+                                  "$[groups][0][packages][1][file][name]")
 
 # ファイル名整形
 jdb_filename = re.findall('v.*b', str(jdb_filename_org))
@@ -126,6 +126,7 @@ MD5_list = [
 #print(link_list, filename_list, MD5_list)
 print("======================== 分析完了 ========================")
 print("SEP パターンファイルのダウンロードしています…")
+
 
 # ダウンロード&プログレスバーモジュールに関するコード
 def downloader(url, path):
